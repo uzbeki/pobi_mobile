@@ -1,28 +1,42 @@
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
 
-export const getTodo = /* GraphQL */ `
-  query GetTodo($id: ID!) {
-    getTodo(id: $id) {
-      id
-      name
-      description
+export const getPeopleLocation = /* GraphQL */ `
+  query GetPeopleLocation($ride_event: ID!, $user: ID!) {
+    getPeopleLocation(ride_event: $ride_event, user: $user) {
+      ride_event
+      user
+      longitude
+      latitude
+      speed
       createdAt
       updatedAt
     }
   }
 `;
-export const listTodos = /* GraphQL */ `
-  query ListTodos(
-    $filter: ModelTodoFilterInput
+export const listPeopleLocations = /* GraphQL */ `
+  query ListPeopleLocations(
+    $ride_event: ID
+    $user: ModelIDKeyConditionInput
+    $filter: ModelPeopleLocationFilterInput
     $limit: Int
     $nextToken: String
+    $sortDirection: ModelSortDirection
   ) {
-    listTodos(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    listPeopleLocations(
+      ride_event: $ride_event
+      user: $user
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+      sortDirection: $sortDirection
+    ) {
       items {
-        id
-        name
-        description
+        ride_event
+        user
+        longitude
+        latitude
+        speed
         createdAt
         updatedAt
       }

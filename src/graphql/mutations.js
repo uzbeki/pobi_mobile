@@ -1,43 +1,49 @@
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
 
-export const createTodo = /* GraphQL */ `
-  mutation CreateTodo(
-    $input: CreateTodoInput!
-    $condition: ModelTodoConditionInput
+export const createPeopleLocation = /* GraphQL */ `
+  mutation CreatePeopleLocation(
+    $input: CreatePeopleLocationInput!
+    $condition: ModelPeopleLocationConditionInput
   ) {
-    createTodo(input: $input, condition: $condition) {
-      id
-      name
-      description
+    createPeopleLocation(input: $input, condition: $condition) {
+      ride_event
+      user
+      longitude
+      latitude
+      speed
       createdAt
       updatedAt
     }
   }
 `;
-export const updateTodo = /* GraphQL */ `
-  mutation UpdateTodo(
-    $input: UpdateTodoInput!
-    $condition: ModelTodoConditionInput
+export const updatePeopleLocation = /* GraphQL */ `
+  mutation UpdatePeopleLocation(
+    $input: UpdatePeopleLocationInput!
+    $condition: ModelPeopleLocationConditionInput
   ) {
-    updateTodo(input: $input, condition: $condition) {
-      id
-      name
-      description
+    updatePeopleLocation(input: $input, condition: $condition) {
+      ride_event
+      user
+      longitude
+      latitude
+      speed
       createdAt
       updatedAt
     }
   }
 `;
-export const deleteTodo = /* GraphQL */ `
-  mutation DeleteTodo(
-    $input: DeleteTodoInput!
-    $condition: ModelTodoConditionInput
+export const deletePeopleLocation = /* GraphQL */ `
+  mutation DeletePeopleLocation(
+    $input: DeletePeopleLocationInput!
+    $condition: ModelPeopleLocationConditionInput
   ) {
-    deleteTodo(input: $input, condition: $condition) {
-      id
-      name
-      description
+    deletePeopleLocation(input: $input, condition: $condition) {
+      ride_event
+      user
+      longitude
+      latitude
+      speed
       createdAt
       updatedAt
     }

@@ -1,5 +1,12 @@
-type Todo @model {
-  id: ID!
-  name: String!
-  description: String
+# type Todo @model @auth(rules: [{allow: public}]) {
+#   id: ID!
+#   name: String!
+#   description: String
+# }
+type PeopleLocation @model @auth(rules: [{allow: public}]){
+    ride_event: ID! @primaryKey(sortKeyFields: ["user"])
+    user: ID!
+    longitude: Float
+    latitude: Float
+    speed: Float
 }

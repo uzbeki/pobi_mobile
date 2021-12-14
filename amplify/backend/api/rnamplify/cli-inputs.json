@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "serviceConfiguration": {
+    "serviceName": "AppSync",
+    "defaultAuthType": {
+      "mode": "API_KEY",
+      "expirationTime": 365,
+      "apiKeyExpirationDate": "2022-12-08T08:56:29.231Z",
+      "keyDescription": "desciption for the api key should be here, but meh...."
+    },
+    "conflictResolution": {},
+    "apiName": "rnamplify",
+    "gqlSchemaPath": "C:\\Users\\behru\\Desktop\\work\\reactNative\\amplified\\RNAmplify\\amplify\\backend\\api\\rnamplify\\schema.graphql"
+  }
+}
