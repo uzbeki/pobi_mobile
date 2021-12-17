@@ -47,7 +47,9 @@ const Map = () => {
     const [region, setRegion] = useState(initial);
     const [myMarker, setMyMarker] = useState(null);
     const mapRef = useRef(null);
-
+    const getRandomNum = (min, max) => {
+        return Math.random() * (max - min) + min;
+    };
     useEffect(() => {
         (async () => {
             //初めての位置情報取得
@@ -78,11 +80,9 @@ const Map = () => {
         return () => setCurrentLocation(initial);
     }, []);
 
-    const getRandomNum = (min, max) => {
-        return Math.random() * (max - min) + min;
-    };
+    
 
-    let i = 0;
+    
 
     // const getPositionCallBack = location => {
     //     console.log("loc==> ", location);
@@ -178,6 +178,7 @@ const Map = () => {
                             }}
                         >
                             <Image
+                            source={marker.avatar}
                                 style={{
                                     width: 27,
                                     height: 27,
