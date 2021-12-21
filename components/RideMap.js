@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Dimensions, StyleSheet, Text, View, Image, ActivityIndicator, PermissionsAndroid } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 // import { useDispatch, useSelector } from 'react-redux';
@@ -46,6 +46,8 @@ const Map = () => {
     const [peopleMarkers, setPeopleMarkers] = useState([]);
     const [region, setRegion] = useState(initial);
     const [myMarker, setMyMarker] = useState(null);
+
+    const [shouldTrack, setShouldTrack] = useState(true);
     const mapRef = useRef(null);
     const getRandomNum = (min, max) => {
         return Math.random() * (max - min) + min;
@@ -80,20 +82,28 @@ const Map = () => {
         return () => setCurrentLocation(initial);
     }, []);
 
-    
-
-    
-
-    // const getPositionCallBack = location => {
+    // const getPositionCallBack = async location => {
     //     console.log("loc==> ", location);
-    //     // setMyMarker({
-    //     //     latitude: location.coords.latitude,
-    //     //     longitude: location.coords.longitude,
-    //     //     latitudeDelta: 0.05,
-    //     //     longitudeDelta: 0.05,
-    //     //     title: "MY Marker ",
-    //     //     description: "This is My marker",
-    //     // });
+    //     if (!myMarker) {
+    //         console.log("first");
+    //         setMyMarker({
+    //             latitude: location.coords.latitude,
+    //             longitude: location.coords.longitude,
+    //             latitudeDelta: 0.05,
+    //             longitudeDelta: 0.05,
+    //             title: "MY Marker ",
+    //             description: "This is My marker",
+    //         });
+    //     } else {
+    //         if (location.coords.latitude === myMarker.latitude && location.coords.longitude === myMarker.longitude) {
+    //             console.log("same");
+    //             return;
+    //         } else {
+    //             console.log("not same");
+    //             setMyMarker({ ...myMarker, latitude: location.coords.latitude, longitude: location.coords.longitude });
+    //         }
+    //     }
+
     //     // setCurrentLocation({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 })
     // };
 
@@ -120,7 +130,13 @@ const Map = () => {
     //         }
     //     };
 
-    //     startWatching();
+    //     if (shouldTrack) {
+    //         console.log("start watching");
+    //         startWatching();
+    //     } else {
+    //         subscriber?.remove();
+    //         subscriber = null;
+    //     }
 
     //     /*DBに現在の位置情報を保存する*/
 
@@ -130,7 +146,7 @@ const Map = () => {
     //         }
     //         setCurrentLocation(initial);
     //     };
-    // }, [getPositionCallBack]);
+    // }, [shouldTrack,getPositionCallBack]);
 
     return (
         <MapView
@@ -178,7 +194,7 @@ const Map = () => {
                             }}
                         >
                             <Image
-                            source={marker.avatar}
+                                source={marker.avatar}
                                 style={{
                                     width: 27,
                                     height: 27,
@@ -197,8 +213,6 @@ const Map = () => {
                 />
             )} */}
         </MapView>
-
-        // <Text>Map</Text>
     );
 };
 
