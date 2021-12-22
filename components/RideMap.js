@@ -14,6 +14,7 @@ import { button } from "aws-amplify";
 // const { width, height } = Dimensions.get('window');
 import { API } from "aws-amplify";
 import { onUpdatePeopleLocationByRideEvent } from "../src/graphql/subscriptions";
+import { tryUpdatePeopleLocation } from '../utils/PeopleLocation'
 
 const avatar_1 = require("../assets/images/avatar-1.jpg");
 const avatar_2 = require("../assets/images/avatar-2.jpg");
@@ -83,12 +84,27 @@ const Map = () => {
                 subscriptionToUpdateLocation = await API.graphql({
                     query: onUpdatePeopleLocationByRideEvent,
                     variables: {
-                        ride_event: "4",
+                        ride_event: "test0",
                     },
-                    }).subscribe({
+                }).subscribe({
                     next: event => {
                         console.log('subscription')
-                        console.log(event.value.data.onUpdatePeopleLocationByRideEvent)
+                        const userLocation = event.value.data.onUpdatePeopleLocationByRideEvent
+                        //console.log(userLocation)
+                        const existUserMarkers = peopleMarkers.filter((marker) => marker.user === userLocation.user)
+                        if (existUserMarkers.length > 0) {
+                            existUserMarkers.forEach((marker, index) => {
+                                if (marker.user === userLocation.user) {
+                                    peopleMarkers[index] = userLocation
+                                    console.log("in:", peopleMarkers);
+                                }
+                            })
+
+                            console.log("out :", peopleMarkers);
+                            setPeopleMarkers(peopleMarkers)
+                        } else {
+                            setPeopleMarkers(peopleMarkers.push(userLocation))
+                        }
                     },
                     error: error => console.warn(error)
                 })
@@ -183,10 +199,12 @@ const Map = () => {
             showsUserLocation={true}
             showsMyLocationButton={true}
             onUserLocationChange={e => {
+                const coordinate = e.nativeEvent.coordinate
                 // console.log("user location change", e.nativeEvent);
                 setCurrentLocation({ ...e.nativeEvent.coordinate, latitudeDelta: 0.05, longitudeDelta: 0.05 });
 
                 /*DBに現在の位置情報を保存する*/
+                tryUpdatePeopleLocation({ ride_event: "test0", user: "okuda", latitude: coordinate.latitude, longitude: coordinate.longitude });
             }}
         >
             {peopleMarkers.map((marker, index) => (

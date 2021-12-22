@@ -4,9 +4,9 @@ import { createPeopleLocation, updatePeopleLocation } from "../src/graphql/mutat
 import { onCreatePeopleLocation } from "../src/graphql/subscriptions";
 
 
-const tryListPeopleLocations = async ({ride_event}={}) => {
+const tryListPeopleLocations = async ({ ride_event } = {}) => {
     // TODO: Receive 'nextToken'
-    
+
     try {
         const response = await API.graphql(graphqlOperation(listPeopleLocations, {
             ride_event: ride_event,
@@ -23,9 +23,9 @@ const tryListPeopleLocations = async ({ride_event}={}) => {
 
 // Note: Not passed parameters do not poplulate into DB, instead of 'null'.
 // params: ride_event and user are required.
-const _tryCreatePeopleLocation =  async ({ride_event, user, longitude, latitude, speed}) => {
+const _tryCreatePeopleLocation = async ({ ride_event, user, longitude, latitude, speed }) => {
 
-    if(!_requireDynamoID(ride_event, user)) {
+    if (!_requireDynamoID(ride_event, user)) {
         return
     }
 
@@ -36,19 +36,19 @@ const _tryCreatePeopleLocation =  async ({ride_event, user, longitude, latitude,
         latitude: latitude,
         speed: speed
     }
-    
+
     try {
-        const response = await API.graphql(graphqlOperation(createPeopleLocation, {input: input}))
+        const response = await API.graphql(graphqlOperation(createPeopleLocation, { input: input }))
         console.log(response)
-    } catch (error){
+    } catch (error) {
         console.warn('Failed "createPeopleLocation"')
         console.error(error)
     }
 }
 
-const tryUpdatePeopleLocation = async ({ride_event, user, longitude, latitude, speed}) => {
+const tryUpdatePeopleLocation = async ({ ride_event, user, longitude, latitude, speed }) => {
 
-    if(!_requireDynamoID(ride_event, user)) {
+    if (!_requireDynamoID(ride_event, user)) {
         return
     }
 
@@ -61,20 +61,20 @@ const tryUpdatePeopleLocation = async ({ride_event, user, longitude, latitude, s
     }
 
     try {
-        const response = await API.graphql(graphqlOperation(updatePeopleLocation, {input: input}))
-        console.log(response)
-    } catch(error) {
+        const response = await API.graphql(graphqlOperation(updatePeopleLocation, { input: input }))
+        //console.log(response)
+    } catch (error) {
         console.warn('Failed "updatePeopleLocation"')
         // If the item doesn't exist, creates a new item
-        if(error.data.updatePeopleLocation === null) {
+        if (error.data.updatePeopleLocation === null) {
             _tryCreatePeopleLocation(input)
         }
     }
 }
 
 // Subscription from other file is not work. We can't unsubsctibe.  
-const tryOnCreatePeopleLocation = async ({}={}) => {
-    
+const tryOnCreatePeopleLocation = async ({ } = {}) => {
+
     try {
         const subscription = await API.graphql(
             graphqlOperation(onCreatePeopleLocation, {})
@@ -82,7 +82,7 @@ const tryOnCreatePeopleLocation = async ({}={}) => {
             next: (provider, value) => console.log(value),
             error: error => console.warn(error)
         });
-        
+
     } catch (error) {
         console.error(error)
     }
@@ -90,7 +90,7 @@ const tryOnCreatePeopleLocation = async ({}={}) => {
 
 // Prevent 'undefined' or 'null'
 const _requireDynamoID = (ride_event, user) => {
-    if(ride_event == null || user == null) {
+    if (ride_event == null || user == null) {
         console.warn('"ride_event" and "user" are required')
         return false
     }
@@ -99,4 +99,4 @@ const _requireDynamoID = (ride_event, user) => {
 }
 
 
-export{ tryUpdatePeopleLocation, tryListPeopleLocations};
+export { tryUpdatePeopleLocation, tryListPeopleLocations };
