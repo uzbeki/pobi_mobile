@@ -12,6 +12,9 @@ import tw from "tailwind-react-native-classnames";
 import * as Location from "expo-location";
 import { button } from "aws-amplify";
 // const { width, height } = Dimensions.get('window');
+import { API } from "aws-amplify";
+import { onCreatePeopleLocation } from "../src/graphql/subscriptions";
+
 const avatar_1 = require("../assets/images/avatar-1.jpg");
 const avatar_2 = require("../assets/images/avatar-2.jpg");
 
@@ -53,6 +56,7 @@ const Map = () => {
         return Math.random() * (max - min) + min;
     };
     useEffect(() => {
+        let subscriptionToUpdateLocation
         (async () => {
             //初めての位置情報取得
             let { status } = await Location.requestForegroundPermissionsAsync();
@@ -74,14 +78,33 @@ const Map = () => {
                 people2.latitude = location.coords.latitude + getRandomNum(-0.001, 0.001);
                 setPeopleMarkers([people1, people2]); //マーカの位置を変更
             }, 5000);
+
+            const subscribeToUpdateLocation = async () => {
+                subscriptionToUpdateLocation = await API.graphql({
+                    query: onCreatePeopleLocation,
+                    variables: {
+                        ride_event: "2",
+                    },
+                    }).subscribe({
+                    next: event => {
+                        console.log('subscription')
+                        console.log(event.value.data.onCreatePeopleLocation)
+                    },
+                    error: error => console.warn(error)
+                })
+            }
+            subscribeToUpdateLocation()
+
             return () => clearInterval(interval);
             // setCurrentLocation({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
             // console.log("location==> ", location);
         })();
 
-        return () => setCurrentLocation(initial);
+        return () => {
+            setCurrentLocation(initial);
+            subscriptionToUpdateLocation.unsubscribe()
+        }
     }, []);
-
     // const getPositionCallBack = async location => {
     //     console.log("loc==> ", location);
     //     if (!myMarker) {

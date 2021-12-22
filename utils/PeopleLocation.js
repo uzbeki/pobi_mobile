@@ -1,7 +1,7 @@
 import { graphqlOperation, API } from "aws-amplify";
 import { listPeopleLocations } from "../src/graphql/queries";
 import { createPeopleLocation, updatePeopleLocation } from "../src/graphql/mutations";
-import { onCreatePeopleLocation, onUpdatePeopleLocation, onDeletePeopleLocation } from "../src/graphql/subscriptions";
+import { onCreatePeopleLocation } from "../src/graphql/subscriptions";
 
 
 const tryListPeopleLocations = async ({ride_event}={}) => {
@@ -16,8 +16,6 @@ const tryListPeopleLocations = async ({ride_event}={}) => {
         // Response include 2 values, 'items' and 'nextToken'.
         const items = response.data.listPeopleLocations.items
         console.log(response.data.listPeopleLocations)
-        
-
     } catch (error) {
         console.error(error);
     }
@@ -35,16 +33,15 @@ const _tryCreatePeopleLocation =  async ({ride_event, user, longitude, latitude,
         ride_event: ride_event,
         user: user,
         longitude: longitude,
-	    latitude: latitude,
-	    speed: speed,
-    };
+        latitude: latitude,
+        speed: speed
+    }
     
     try {
         const response = await API.graphql(graphqlOperation(createPeopleLocation, {input: input}))
-        
         console.log(response)
     } catch (error){
-        
+        console.warn('Failed "createPeopleLocation"')
         console.error(error)
     }
 }
@@ -52,10 +49,6 @@ const _tryCreatePeopleLocation =  async ({ride_event, user, longitude, latitude,
 const tryUpdatePeopleLocation = async ({ride_event, user, longitude, latitude, speed}) => {
 
     if(!_requireDynamoID(ride_event, user)) {
-        return
-    }
-
-    if(ride_event === undefined) {
         return
     }
 
@@ -71,10 +64,10 @@ const tryUpdatePeopleLocation = async ({ride_event, user, longitude, latitude, s
         const response = await API.graphql(graphqlOperation(updatePeopleLocation, {input: input}))
         console.log(response)
     } catch(error) {
-        console.log('Failed "updatePeopleLocation"')
-        // If DynamnoDB doesn't have a unique record, creates a new record
+        console.warn('Failed "updatePeopleLocation"')
+        // If the item doesn't exist, creates a new item
         if(error.data.updatePeopleLocation === null) {
-            _tryCreatePeopleLocation({...input})
+            _tryCreatePeopleLocation(input)
         }
     }
 }
