@@ -13,7 +13,7 @@ import * as Location from "expo-location";
 import { button } from "aws-amplify";
 // const { width, height } = Dimensions.get('window');
 import { API } from "aws-amplify";
-import { onCreatePeopleLocation } from "../src/graphql/subscriptions";
+import { onUpdatePeopleLocationByRideEvent } from "../src/graphql/subscriptions";
 
 const avatar_1 = require("../assets/images/avatar-1.jpg");
 const avatar_2 = require("../assets/images/avatar-2.jpg");
@@ -81,14 +81,14 @@ const Map = () => {
 
             const subscribeToUpdateLocation = async () => {
                 subscriptionToUpdateLocation = await API.graphql({
-                    query: onCreatePeopleLocation,
+                    query: onUpdatePeopleLocationByRideEvent,
                     variables: {
-                        ride_event: "2",
+                        ride_event: "4",
                     },
                     }).subscribe({
                     next: event => {
                         console.log('subscription')
-                        console.log(event.value.data.onCreatePeopleLocation)
+                        console.log(event.value.data.onUpdatePeopleLocationByRideEvent)
                     },
                     error: error => console.warn(error)
                 })
