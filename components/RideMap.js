@@ -14,36 +14,37 @@ import { button } from "aws-amplify";
 // const { width, height } = Dimensions.get('window');
 import { API } from "aws-amplify";
 import { onUpdatePeopleLocationByRideEvent } from "../src/graphql/subscriptions";
-import { tryUpdatePeopleLocation } from '../utils/PeopleLocation'
+import { tryUpdatePeopleLocation } from "../utils/PeopleLocation";
 
 const avatar_1 = require("../assets/images/avatar-1.jpg");
 const avatar_2 = require("../assets/images/avatar-2.jpg");
 
 //ダミーデータ
-const people1 = {
-    latitude: undefined,
-    longitude: undefined,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-    title: "Marker 1",
-    description: "This is marker1",
-    avatar: avatar_1,
-};
-const people2 = {
-    latitude: undefined,
-    longitude: undefined,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-    title: "Marker 2",
-    description: "This is marker2",
-    avatar: avatar_2,
-};
+// const people1 = {
+//     latitude: undefined,
+//     longitude: undefined,
+//     latitudeDelta: 0.05,
+//     longitudeDelta: 0.05,
+//     title: "Marker 1",
+//     description: "This is marker1",
+//     avatar: avatar_1,
+// };
+// const people2 = {
+//     latitude: undefined,
+//     longitude: undefined,
+//     latitudeDelta: 0.05,
+//     longitudeDelta: 0.05,
+//     title: "Marker 2",
+//     description: "This is marker2",
+//     avatar: avatar_2,
+// };
 const initial = {
     latitude: 37.3469,
     longitude: -122.0121,
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
 };
+const myUserInfo = { id: "okuda" };
 
 const Map = () => {
     const [currentLocation, setCurrentLocation] = useState(initial);
@@ -57,7 +58,7 @@ const Map = () => {
         return Math.random() * (max - min) + min;
     };
     useEffect(() => {
-        let subscriptionToUpdateLocation
+        let subscriptionToUpdateLocation;
         (async () => {
             //初めての位置情報取得
             let { status } = await Location.requestForegroundPermissionsAsync();
@@ -72,13 +73,13 @@ const Map = () => {
             setRegion({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
 
             //定期的(5秒)に他ユーザーの位置情報を取得する（繋ぎこみ前のテスト用）
-            const interval = setInterval(() => {
-                people1.longitude = location.coords.longitude + getRandomNum(-0.001, 0.001);
-                people2.longitude = location.coords.longitude + getRandomNum(-0.001, 0.001);
-                people1.latitude = location.coords.latitude + getRandomNum(-0.001, 0.001);
-                people2.latitude = location.coords.latitude + getRandomNum(-0.001, 0.001);
-                setPeopleMarkers([people1, people2]); //マーカの位置を変更
-            }, 5000);
+            // const interval = setInterval(() => {
+            //     people1.longitude = location.coords.longitude + getRandomNum(-0.001, 0.001);
+            //     people2.longitude = location.coords.longitude + getRandomNum(-0.001, 0.001);
+            //     people1.latitude = location.coords.latitude + getRandomNum(-0.001, 0.001);
+            //     people2.latitude = location.coords.latitude + getRandomNum(-0.001, 0.001);
+            //     setPeopleMarkers([people1, people2]); //マーカの位置を変更
+            // }, 5000);
 
             const subscribeToUpdateLocation = async () => {
                 subscriptionToUpdateLocation = await API.graphql({
@@ -88,28 +89,38 @@ const Map = () => {
                     },
                 }).subscribe({
                     next: event => {
-                        console.log('subscription')
-                        const userLocation = event.value.data.onUpdatePeopleLocationByRideEvent
-                        //console.log(userLocation)
-                        const existUserMarkers = peopleMarkers.filter((marker) => marker.user === userLocation.user)
-                        if (existUserMarkers.length > 0) {
-                            existUserMarkers.forEach((marker, index) => {
-                                if (marker.user === userLocation.user) {
-                                    peopleMarkers[index] = userLocation
-                                    console.log("in:", peopleMarkers);
-                                }
-                            })
-
-                            console.log("out :", peopleMarkers);
-                            setPeopleMarkers(peopleMarkers)
+                        console.log("subscription");
+                        const newUserLocation = event.value.data.onUpdatePeopleLocationByRideEvent;
+                        console.log("newUserLocation =>", newUserLocation);
+                        //自分の情報を除外
+                        // if (newUserLocation.user === myUserInfo.id) return;
+                        //新しい位置情報と一致するマーカーのインデックスを取得
+                        const newUserLocIndex = peopleMarkers.findIndex(
+                            marker => marker.user === newUserLocation.user
+                        );
+                        if (newUserLocIndex === -1) {
+                            //新規ユーザーのマーカーを追加
+                            console.log("add new user");
+                            peopleMarkers.push(newUserLocation);
+                            setPeopleMarkers(peopleMarkers);
                         } else {
-                            setPeopleMarkers(peopleMarkers.push(userLocation))
+                            //既存ユーザーのマーカーを更新
+                            console.log("update marker");
+                            peopleMarkers[newUserLocIndex] = {
+                                ...newUserLocation,
+                                title: newUserLocation.user,
+                                description: `This is ${newUserLocation.user}`,
+                                avatar: avatar_1,
+                                // avatar: avatar_2,
+                            };
+                            setPeopleMarkers(peopleMarkers);
                         }
+                     
                     },
-                    error: error => console.warn(error)
-                })
-            }
-            subscribeToUpdateLocation()
+                    error: error => console.warn(error),
+                });
+            };
+            subscribeToUpdateLocation();
 
             return () => clearInterval(interval);
             // setCurrentLocation({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
@@ -118,8 +129,8 @@ const Map = () => {
 
         return () => {
             setCurrentLocation(initial);
-            subscriptionToUpdateLocation.unsubscribe()
-        }
+            subscriptionToUpdateLocation.unsubscribe();
+        };
     }, []);
     // const getPositionCallBack = async location => {
     //     console.log("loc==> ", location);
@@ -199,12 +210,18 @@ const Map = () => {
             showsUserLocation={true}
             showsMyLocationButton={true}
             onUserLocationChange={e => {
-                const coordinate = e.nativeEvent.coordinate
+                const coordinate = e.nativeEvent.coordinate;
                 // console.log("user location change", e.nativeEvent);
                 setCurrentLocation({ ...e.nativeEvent.coordinate, latitudeDelta: 0.05, longitudeDelta: 0.05 });
 
                 /*DBに現在の位置情報を保存する*/
-                tryUpdatePeopleLocation({ ride_event: "test0", user: "okuda", latitude: coordinate.latitude, longitude: coordinate.longitude });
+                tryUpdatePeopleLocation({
+                    ride_event: "test0",
+                    user: "okuda",
+                    // user: "beki",
+                    latitude: coordinate.latitude,
+                    longitude: coordinate.longitude,
+                });
             }}
         >
             {peopleMarkers.map((marker, index) => (
