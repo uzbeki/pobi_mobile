@@ -93,11 +93,9 @@ const Map = () => {
                         const newUserLocation = event.value.data.onUpdatePeopleLocationByRideEvent;
                         console.log("newUserLocation =>", newUserLocation);
                         //自分の情報を除外
-                        // if (newUserLocation.user === myUserInfo.id) return;
+                        if (newUserLocation.user === myUserInfo.id) return;
                         //新しい位置情報と一致するマーカーのインデックスを取得
-                        const newUserLocIndex = peopleMarkers.findIndex(
-                            marker => marker.user === newUserLocation.user
-                        );
+                        const newUserLocIndex = peopleMarkers.findIndex(marker => marker.user === newUserLocation.user);
                         if (newUserLocIndex === -1) {
                             //新規ユーザーのマーカーを追加
                             console.log("add new user");
@@ -115,7 +113,6 @@ const Map = () => {
                             };
                             setPeopleMarkers(peopleMarkers);
                         }
-                     
                     },
                     error: error => console.warn(error),
                 });
@@ -203,10 +200,10 @@ const Map = () => {
             style={tw`h-full`}
             ref={mapRef}
             initialRegion={initial}
-            region={region}
-            onRegionChange={loc => {
-                setRegion(loc);
-            }}
+            // region={region}
+            // onRegionChange={loc => {
+            //     setRegion(loc);
+            // }}
             showsUserLocation={true}
             showsMyLocationButton={true}
             onUserLocationChange={e => {
