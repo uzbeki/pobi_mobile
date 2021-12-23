@@ -69,6 +69,8 @@ const tryUpdatePeopleLocation = async ({ ride_event, user, longitude, latitude, 
         if (error.data.updatePeopleLocation === null) {
             _tryCreatePeopleLocation(input)
         }
+        console.log('error=> ', error)
+        // console.error(error)
     }
 }
 
