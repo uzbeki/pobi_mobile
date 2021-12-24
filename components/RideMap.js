@@ -52,7 +52,7 @@ const Map = () => {
         }
         getFirstLocation();
 
-        let subscriptionToUpdateLocation = tryOnUpdatePeopleLocationByRideEvent({ ride_event: "test0" }, (userLocation) => updatePeopleMarker(userLocation));
+        const subscriptionToUpdateLocation = tryOnUpdatePeopleLocationByRideEvent({ ride_event: "test0" }, (userLocation) => updatePeopleMarker(userLocation));
 
         return () => {
             subscriptionToUpdateLocation.unsubscribe();
