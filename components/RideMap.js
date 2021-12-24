@@ -12,9 +12,7 @@ import tw from "tailwind-react-native-classnames";
 import * as Location from "expo-location";
 import { button } from "aws-amplify";
 // const { width, height } = Dimensions.get('window');
-import { API } from "aws-amplify";
-import { onUpdatePeopleLocationByRideEvent } from "../src/graphql/subscriptions";
-import { tryUpdatePeopleLocation } from "../utils/PeopleLocation";
+import { tryUpdatePeopleLocation, tryOnUpdatePeopleLocationByRideEvent } from "../utils/PeopleLocation";
 
 const avatar_1 = require("../assets/images/avatar-1.jpg");
 const avatar_2 = require("../assets/images/avatar-2.jpg");
@@ -37,8 +35,7 @@ const Map = () => {
     const mapRef = useRef(null);
 
     useEffect(() => {
-        let subscriptionToUpdateLocation;
-        (async () => {
+        const getFirstLocation = async () => {
             //初めての位置情報取得
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== PermissionsAndroid.RESULTS.GRANTED) {
@@ -51,59 +48,47 @@ const Map = () => {
             //マップの中央を現在地に設定
             // setRegion({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
             setMyLocation({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
-            const subscribeToUpdateLocation = async () => {
-                subscriptionToUpdateLocation = await API.graphql({
-                    query: onUpdatePeopleLocationByRideEvent,
-                    variables: {
-                        ride_event: "test0",
-                    },
-                }).subscribe({
-                    next: event => {
-                        console.log("subscription");
-                        const newUserLocation = event.value.data.onUpdatePeopleLocationByRideEvent;
-                        // console.log("newUserLocation =>", newUserLocation);
-
-                        if (newUserLocation.user === myUserInfo.id) {
-                            console.log("ほかのユーザーの位置情報が取得できません。");
-
-                            return;
-                        } else {
-                            //新しい位置情報と一致するマーカーのインデックスを取得
-                            const newUserLocIndex = peopleMarkers.findIndex(
-                                marker => marker.user === newUserLocation.user
-                            );
-                            if (newUserLocIndex === -1) {
-                                //新規ユーザーのマーカーを追加
-                                console.log("add new user");
-                                peopleMarkers.push(newUserLocation);
-                                setPeopleMarkers(peopleMarkers);
-                            } else {
-                                //既存ユーザーのマーカーを更新
-                                console.log("update marker");
-                                peopleMarkers[newUserLocIndex] = {
-                                    ...newUserLocation,
-                                    title: newUserLocation.user,
-                                    description: `This is ${newUserLocation.user}`,
-                                    avatar: avatar_1,
-                                    // avatar: avatar_2,
-                                };
-                                setPeopleMarkers(peopleMarkers);
-                            }
-                        }
-                    },
-                    error: error => console.warn(error),
-                });
-            };
-            subscribeToUpdateLocation();
-
-            // setMyLocation({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
             // console.log("location==> ", location);
-        })();
+        }
+        getFirstLocation();
+
+        let subscriptionToUpdateLocation = tryOnUpdatePeopleLocationByRideEvent({ ride_event: "test0" }, (userLocation) => updatePeopleMarker(userLocation));
 
         return () => {
             subscriptionToUpdateLocation.unsubscribe();
         };
     }, []);
+
+    const updatePeopleMarker = newUserLocation => {
+        console.log(newUserLocation);
+        if (newUserLocation.user === myUserInfo.id) {
+            console.log("ほかのユーザーの位置情報が取得できません。");
+
+            return;
+        } else {
+            //新しい位置情報と一致するマーカーのインデックスを取得
+            const newUserLocIndex = peopleMarkers.findIndex(
+                marker => marker.user === newUserLocation.user
+            );
+            if (newUserLocIndex === -1) {
+                //新規ユーザーのマーカーを追加
+                console.log("add new user");
+                peopleMarkers.push(newUserLocation);
+                setPeopleMarkers(peopleMarkers);
+            } else {
+                //既存ユーザーのマーカーを更新
+                console.log("update marker");
+                peopleMarkers[newUserLocIndex] = {
+                    ...newUserLocation,
+                    title: newUserLocation.user,
+                    description: `This is ${newUserLocation.user}`,
+                    avatar: avatar_1,
+                    // avatar: avatar_2,
+                };
+                setPeopleMarkers(peopleMarkers);
+            }
+        }
+    }
     // const getPositionCallBack = async location => {
     //     console.log("loc==> ", location);
     //     if (!myMarker) {
