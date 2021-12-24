@@ -1,7 +1,7 @@
 import { graphqlOperation, API } from "aws-amplify";
 import { listPeopleLocations } from "../src/graphql/queries";
 import { createPeopleLocation, updatePeopleLocation } from "../src/graphql/mutations";
-import { onCreatePeopleLocation } from "../src/graphql/subscriptions";
+import { onUpdatePeopleLocationByRideEvent } from "../src/graphql/subscriptions";
 
 
 const tryListPeopleLocations = async ({ ride_event } = {}) => {
@@ -70,24 +70,33 @@ const tryUpdatePeopleLocation = async ({ ride_event, user, longitude, latitude, 
             _tryCreatePeopleLocation(input)
         }
         console.log('error=> ', error)
-        // console.error(error)
     }
 }
 
-// Subscription from other file is not work. We can't unsubsctibe.  
-const tryOnCreatePeopleLocation = async ({ } = {}) => {
+/*
+@parameter subscriptionCallback
+It accepts one argument: 
+<Object> userLocation which is data of subscription
+*/
+const tryOnUpdatePeopleLocationByRideEvent = async ({ ride_event }, subscriptionCallback) => {
 
+    let subscription = {}
     try {
-        const subscription = await API.graphql(
-            graphqlOperation(onCreatePeopleLocation, {})
-        ).subscribe({
-            next: (provider, value) => console.log(value),
+        subscription = await API.graphql({
+            query: onUpdatePeopleLocationByRideEvent,
+            variables: {
+                ride_event: ride_event,
+            },
+        }).subscribe({
+            next: event => subscriptionCallback(event.value.data.onUpdatePeopleLocationByRideEvent),
             error: error => console.warn(error)
         });
 
     } catch (error) {
         console.error(error)
     }
+
+    return subscription
 }
 
 // Prevent 'undefined' or 'null'
@@ -101,4 +110,4 @@ const _requireDynamoID = (ride_event, user) => {
 }
 
 
-export { tryUpdatePeopleLocation, tryListPeopleLocations };
+export { tryUpdatePeopleLocation, tryOnUpdatePeopleLocationByRideEvent };
