@@ -30,10 +30,15 @@ const Map = () => {
     const [myLocation, setMyLocation] = useState(initial);
     const [peopleMarkers, setPeopleMarkers] = useState([]);
     const [regionByUser, setRegionByUser] = useState(null);
-    // const [myMarker, setMyMarker] = useState(null);
-    // const [shouldTrack, setShouldTrack] = useState(true);
+    const [shouldTrack, setShouldTrack] = useState(true);
     const mapRef = useRef(null);
+    //位置情報のオブジェクトを受け取り、地図のセンターをそこに移動する
+    const gotoGivenLocation = locObj => {
+        console.log("gotocurrentlocation");
+        mapRef.current.animateToRegion(locObj, 2000);
+    };
 
+    //useEffect[]→ 初めての位置情報取得
     useEffect(() => {
         const getFirstLocation = async () => {
             //初めての位置情報取得
@@ -42,17 +47,26 @@ const Map = () => {
                 console.log("Permission to access foreground location was denied");
                 return;
             }
-            let location = await Location.getCurrentPositionAsync({
+            let currentLocation = await Location.getCurrentPositionAsync({
                 enableHighAccuracy: true,
             });
             //マップの中央を現在地に設定
-            // setRegion({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
-            setMyLocation({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
-            // console.log("location==> ", location);
-        }
+            const myLocObj = { ...currentLocation.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 };
+            console.log("first mylocation is", myLocObj);
+            setMyLocation(myLocObj);
+            //自分の位置情報にセンターを移動
+            gotoGivenLocation(myLocObj);
+        };
         getFirstLocation();
+        return () => {};
+    }, []);
 
-        const subscriptionToUpdateLocation = tryOnUpdatePeopleLocationByRideEvent({ ride_event: "test0" }, (userLocation) => updatePeopleMarker(userLocation));
+    //useEffect[]→ 位置情報共有サブスクリプションの設定
+    useEffect(() => {
+        const subscriptionToUpdateLocation = tryOnUpdatePeopleLocationByRideEvent(
+            { ride_event: "test0" },
+            userLocation => updatePeopleMarker(userLocation)
+        );
 
         return () => {
             subscriptionToUpdateLocation.unsubscribe();
@@ -60,16 +74,18 @@ const Map = () => {
     }, []);
 
     const updatePeopleMarker = newUserLocation => {
-        console.log(newUserLocation);
+        // console.log(newUserLocation);
+        //自分の位置情報を更新
         if (newUserLocation.user === myUserInfo.id) {
-            console.log("ほかのユーザーの位置情報が取得できません。");
-
+            //todo update my location
+            // console.log(newUserLocation);
+            // gotoGivenLocation({ ...newUserLocation, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+            setMyLocation({ ...newUserLocation, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+            console.log("自分の位置情報を更新");
             return;
         } else {
             //新しい位置情報と一致するマーカーのインデックスを取得
-            const newUserLocIndex = peopleMarkers.findIndex(
-                marker => marker.user === newUserLocation.user
-            );
+            const newUserLocIndex = peopleMarkers.findIndex(marker => marker.user === newUserLocation.user);
             if (newUserLocIndex === -1) {
                 //新規ユーザーのマーカーを追加
                 console.log("add new user");
@@ -88,158 +104,127 @@ const Map = () => {
                 setPeopleMarkers(peopleMarkers);
             }
         }
-    }
-    // const getPositionCallBack = async location => {
-    //     console.log("loc==> ", location);
-    //     if (!myMarker) {
-    //         console.log("first");
-    //         setMyMarker({
-    //             latitude: location.coords.latitude,
-    //             longitude: location.coords.longitude,
-    //             latitudeDelta: 0.05,
-    //             longitudeDelta: 0.05,
-    //             title: "MY Marker ",
-    //             description: "This is My marker",
-    //         });
-    //     } else {
-    //         if (location.coords.latitude === myMarker.latitude && location.coords.longitude === myMarker.longitude) {
-    //             console.log("same");
-    //             return;
-    //         } else {
-    //             console.log("not same");
-    //             setMyMarker({ ...myMarker, latitude: location.coords.latitude, longitude: location.coords.longitude });
-    //         }
-    //     }
+    };
 
-    //     // setMyLocation({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 })
-    // };
-
-    // //位置情報を継続して監視する
-    // useEffect(() => {
-    //     let subscriber;
-    //     const startWatching = async () => {
-    //         try {
-    //             const { status } = await Location.requestForegroundPermissionsAsync();
-    //             subscriber = await Location.watchPositionAsync(
-    //                 {
-    //                     accuracy: Location.Accuracy.Highest,
-    //                     timeInterval: 5000,
-    //                     distanceInterval: 10,
-    //                 },
-    //                 getPositionCallBack
-    //             );
-    //             if (status !== "granted") {
-    //                 throw new Error("Location permission not granted");
-    //             }
-    //         } catch (err) {
-    //             console.log("Error: ", err);
-    //             setError(err);
-    //         }
-    //     };
-
-    //     if (shouldTrack) {
-    //         console.log("start watching");
-    //         startWatching();
-    //     } else {
-    //         subscriber?.remove();
-    //         subscriber = null;
-    //     }
-
-    //     /*DBに現在の位置情報を保存する*/
-
-    //     return () => {
-    //         if (subscriber) {
-    //             subscriber.remove();
-    //         }
-    //         setMyLocation(initial);
-    //     };
-    // }, [shouldTrack,getPositionCallBack]);
-
-    return (
-        <MapView
-            style={tw`h-full`}
-            ref={mapRef}
-            initialRegion={initial}
-            region={
-                !regionByUser ? myLocation : regionByUser
-                // myLocation.latitude === region.latitude && myLocation.longitude === region.longitude
-                //     ? myLocation
-                //     : false
+    //useEffect[shouldTrack, getPositionCallBack]→ 自分の位置情報を継続して監視する
+    useEffect(() => {
+        let subscriber;
+        const startWatching = async () => {
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                subscriber = await Location.watchPositionAsync(
+                    {
+                        accuracy: Location.Accuracy.Highest,
+                        timeInterval: 10000, //ms
+                        distanceInterval: 10, //m
+                    },
+                    getPositionCallBack
+                );
+                if (status !== "granted") {
+                    throw new Error("Location permission not granted");
+                }
+            } catch (err) {
+                console.log("Error: ", err);
+                setError(err);
             }
-            // onRegionChangeComplete={(region, { isGesture }) => {
-            //     // console.log("region change complete", isGesture);
-            //     // if (isGesture) {
-            //     //     console.log("isGesture");
-            //     //     setRegionByUser(region);
-            //     // } else {
-            //     //     console.log("not gesture (showsMyLocationButton)");
-            //     //     setRegionByUser(null);
-            //     // }
-            // }}
-            followsUserLocation={true} //for iOS only
-            showsUserLocation={true}
-            showsMyLocationButton={true}
-            onUserLocationChange={e => {
-                const coordinate = e.nativeEvent.coordinate;
-                // console.log("user location change", e.nativeEvent);
-                setMyLocation({ ...e.nativeEvent.coordinate, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+        };
 
-                /*DBに現在の位置情報を保存する*/
-                tryUpdatePeopleLocation({
-                    ride_event: "test0",
-                    user: myUserInfo.id,
-                    latitude: coordinate.latitude,
-                    longitude: coordinate.longitude,
-                });
-            }}
-        >
-            {peopleMarkers.map((marker, index) => (
-                <Marker
-                    key={index}
-                    coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-                    title={marker.title}
-                    description={marker.description}
-                >
-                    <View
-                        style={{
-                            height: 40,
-                            width: 40,
-                            borderRadius: 20,
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: "#54e346",
-                        }}
+        if (shouldTrack) {
+            console.log("start watching");
+            startWatching();
+        } else {
+            subscriber?.remove();
+            subscriber = null;
+        }
+
+        return () => {
+            if (subscriber) {
+                subscriber.remove();
+            }
+            setMyLocation(initial);
+        };
+    }, [shouldTrack, getPositionCallBack]);
+
+    const getPositionCallBack = async location => {
+        console.log("watched myloc==> ", location);
+        /*DBに現在の位置情報を保存する*/
+        tryUpdatePeopleLocation({
+            ride_event: "test0",
+            user: myUserInfo.id,
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+        });
+    };
+    return (
+        <View>
+            <View>
+                <Text>latitude:{myLocation.latitude}</Text>
+                <Text>latitude:{myLocation.longitude}</Text>
+            </View>
+            <MapView
+                style={tw`h-full`}
+                ref={mapRef}
+                initialRegion={initial}
+                // followsUserLocation={true} //for iOS only
+                showsUserLocation={true}
+                showsMyLocationButton={true}
+                // onLayout={gotoCurrentLocation}
+                // onUserLocationChange={e => {
+                //     const coordinate = e.nativeEvent.coordinate;
+                //     // console.log("user location change", e.nativeEvent);
+                //     setMyLocation({ ...e.nativeEvent.coordinate, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+
+                //     /*DBに現在の位置情報を保存する*/
+                //     tryUpdatePeopleLocation({
+                //         ride_event: "test0",
+                //         user: myUserInfo.id,
+                //         latitude: coordinate.latitude,
+                //         longitude: coordinate.longitude,
+                //     });
+                // }}
+            >
+                {peopleMarkers.map((marker, index) => (
+                    <Marker
+                        key={index}
+                        coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
+                        title={marker.title}
+                        description={marker.description}
                     >
                         <View
                             style={{
-                                height: 32,
-                                width: 32,
-                                borderRadius: 15,
+                                height: 40,
+                                width: 40,
+                                borderRadius: 20,
                                 alignItems: "center",
                                 justifyContent: "center",
-                                backgroundColor: "white",
+                                backgroundColor: "#54e346",
                             }}
                         >
-                            <Image
-                                source={marker.avatar}
+                            <View
                                 style={{
-                                    width: 27,
-                                    height: 27,
-                                    // tintColor: COLORS.white
+                                    height: 32,
+                                    width: 32,
+                                    borderRadius: 15,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    backgroundColor: "white",
                                 }}
-                            />
+                            >
+                                <Image
+                                    source={marker.avatar}
+                                    style={{
+                                        width: 27,
+                                        height: 27,
+                                        // tintColor: COLORS.white
+                                    }}
+                                />
+                            </View>
                         </View>
-                    </View>
-                </Marker>
-            ))}
-            {/* {myMarker && (
-                <Marker
-                    coordinate={{ latitude: myMarker.latitude, longitude: myMarker.longitude }}
-                    title={myMarker.title}
-                    description={myMarker.description}
-                />
-            )} */}
-        </MapView>
+                    </Marker>
+                ))}
+            </MapView>
+            
+        </View>
     );
 };
 
