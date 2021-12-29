@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Dimensions, StyleSheet, Text, View, Image, ActivityIndicator, PermissionsAndroid } from "react-native";
+import { Dimensions, StyleSheet, Text, View, Image, Button, ActivityIndicator, PermissionsAndroid } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 // import { useDispatch, useSelector } from 'react-redux';
 import tw from "tailwind-react-native-classnames";
@@ -30,7 +30,8 @@ const Map = () => {
     const [myLocation, setMyLocation] = useState(initial);
     const [peopleMarkers, setPeopleMarkers] = useState([]);
     const [regionByUser, setRegionByUser] = useState(null);
-    const [shouldTrack, setShouldTrack] = useState(true);
+    const [isShareLocation, setIsShareLocation] = useState(false);
+    const [shouldFollowUser, setShouldFollowUser] = useState(true);
     const mapRef = useRef(null);
     //位置情報のオブジェクトを受け取り、地図のセンターをそこに移動する
     const gotoGivenLocation = locObj => {
@@ -65,7 +66,9 @@ const Map = () => {
     useEffect(() => {
         const subscriptionToUpdateLocation = tryOnUpdatePeopleLocationByRideEvent(
             { ride_event: "test0" },
-            userLocation => updatePeopleMarker(userLocation)
+            userLocation => {
+                updatePeopleMarker(userLocation);
+            }
         );
 
         return () => {
@@ -77,7 +80,6 @@ const Map = () => {
         // console.log(newUserLocation);
         //自分の位置情報を更新
         if (newUserLocation.user === myUserInfo.id) {
-            //todo update my location
             // console.log(newUserLocation);
             // gotoGivenLocation({ ...newUserLocation, latitudeDelta: 0.05, longitudeDelta: 0.05 });
             setMyLocation({ ...newUserLocation, latitudeDelta: 0.05, longitudeDelta: 0.05 });
@@ -106,7 +108,7 @@ const Map = () => {
         }
     };
 
-    //useEffect[shouldTrack, getPositionCallBack]→ 自分の位置情報を継続して監視する
+    //useEffect[isShareLocation, getPositionCallBack]→ 自分の位置情報を継続して監視するイベントハンドラーを設定
     useEffect(() => {
         let subscriber;
         const startWatching = async () => {
@@ -116,7 +118,7 @@ const Map = () => {
                     {
                         accuracy: Location.Accuracy.Highest,
                         timeInterval: 10000, //ms
-                        distanceInterval: 10, //m
+                        distanceInterval: 0, //m
                     },
                     getPositionCallBack
                 );
@@ -129,7 +131,7 @@ const Map = () => {
             }
         };
 
-        if (shouldTrack) {
+        if (true /*todo isShowMyLocation*/) {
             console.log("start watching");
             startWatching();
         } else {
@@ -143,24 +145,43 @@ const Map = () => {
             }
             setMyLocation(initial);
         };
-    }, [shouldTrack, getPositionCallBack]);
+    }, [isShareLocation, getPositionCallBack]);
 
     const getPositionCallBack = async location => {
+        console.log("getPositionCallBack", shouldFollowUser); //BUG
+
         console.log("watched myloc==> ", location);
-        /*DBに現在の位置情報を保存する*/
-        tryUpdatePeopleLocation({
-            ride_event: "test0",
-            user: myUserInfo.id,
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-        });
+        if (shouldFollowUser) {
+            /*BUG: shouldFollowUserがgetPositionCallBackが呼ばれるたびに初期化されているため強制的にtrueとなり、現在位置のセンター移動機能(onRegionChangeComplete時)のON/OFF切り替えが正常に動いていない*/
+            console.log("should follow user");
+            gotoGivenLocation({ ...location.coords, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+        }
+        if (isShareLocation) {
+            /*DBに自分の位置情報を保存する*/
+            tryUpdatePeopleLocation({
+                ride_event: "test0",
+                user: myUserInfo.id,
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+            });
+        } else {
+            return;
+        }
     };
     return (
         <View>
             <View>
                 <Text>latitude:{myLocation.latitude}</Text>
                 <Text>latitude:{myLocation.longitude}</Text>
+                <Button
+                    title={!isShareLocation ? "start sharing my location" : "stop sharing my location"}
+                    color={!isShareLocation ? "blue" : "red"}
+                    onPress={() => {
+                        setIsShareLocation(!isShareLocation);
+                    }}
+                ></Button>
             </View>
+
             <MapView
                 style={tw`h-full`}
                 ref={mapRef}
@@ -168,20 +189,20 @@ const Map = () => {
                 // followsUserLocation={true} //for iOS only
                 showsUserLocation={true}
                 showsMyLocationButton={true}
-                // onLayout={gotoCurrentLocation}
-                // onUserLocationChange={e => {
-                //     const coordinate = e.nativeEvent.coordinate;
-                //     // console.log("user location change", e.nativeEvent);
-                //     setMyLocation({ ...e.nativeEvent.coordinate, latitudeDelta: 0.05, longitudeDelta: 0.05 });
-
-                //     /*DBに現在の位置情報を保存する*/
-                //     tryUpdatePeopleLocation({
-                //         ride_event: "test0",
-                //         user: myUserInfo.id,
-                //         latitude: coordinate.latitude,
-                //         longitude: coordinate.longitude,
-                //     });
-                // }}
+                onRegionChangeComplete={(region, { isGesture }) => {
+                    //isGesture is only for google map
+                    if (isGesture && shouldFollowUser) {
+                        console.log("isGesture is true,gotoGivenLocationを停止");
+                        //gotoGivenLocationを停止
+                        setShouldFollowUser(false);
+                    } else if (!isGesture && !shouldFollowUser) {
+                        console.log("isGesture is false,gotoGivenLocationを再開");
+                        //showsMyLocationButtonが押されたとき、gotoGivenLocationを再開
+                        setShouldFollowUser(true);
+                    } else {
+                        return;
+                    }
+                }}
             >
                 {peopleMarkers.map((marker, index) => (
                     <Marker
@@ -223,7 +244,6 @@ const Map = () => {
                     </Marker>
                 ))}
             </MapView>
-            
         </View>
     );
 };
